@@ -6,7 +6,7 @@ from typing import Any, Iterator
 from rich.console import Console
 from bs4 import BeautifulSoup
 
-from utils import fetch, filter_goal_ttps, MitreAttack, TTP_REGEX
+from utils import fetch, filter_goal_ttps, remap_old_tid, MitreAttack, TTP_REGEX
 
 BASE_URL = "https://raw.githubusercontent.com/Cisco-Talos/IOCs/refs/heads/main"
 TALOS_BLOG_REGEX = r"""(?:https?://)?blog\.talosintelligence\.com(?:/[^\s'"\)\]\}>,.;:]*)?"""
@@ -164,7 +164,7 @@ class TalosReport:
                     tids = re.findall(TTP_REGEX, ttp_text)
                     if len(tids) == 0:
                         continue
-                    tid = tids[0]
+                    tid = remap_old_tid(tids[0])
                     ttps.append(self.mitre_attack.get_mitre_info(tid))
 
         if len(ttps) > 0:
@@ -192,7 +192,7 @@ class TalosReport:
                 tids = re.findall(TTP_REGEX, ttp_text)
                 if len(tids) == 0:
                     continue
-                tid = tids[0]
+                tid = remap_old_tid(tids[0])
                 ttps.append(self.mitre_attack.get_mitre_info(tid))
         
         if len(ttps) > 0:
@@ -215,7 +215,7 @@ class TalosReport:
                 tids = re.findall(TTP_REGEX, ttp_text)
                 if len(tids) == 0:
                     continue
-                tid = tids[0]
+                tid = remap_old_tid(tids[0])
                 ttps.append(self.mitre_attack.get_mitre_info(tid))
 
         if len(ttps) > 0:
@@ -224,6 +224,7 @@ class TalosReport:
         # Last resort: regex search the entire text for TTPs
         text = json.dumps(self.contents)
         for tid in re.findall(TTP_REGEX, text):
+            tid = remap_old_tid(tid)
             ttps.append(self.mitre_attack.get_mitre_info(tid))
         if len(ttps) > 0:
             return ttps

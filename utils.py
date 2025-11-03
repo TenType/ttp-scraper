@@ -23,6 +23,12 @@ def fetch(url: str, timeout: int = 30) -> str:
     resp.raise_for_status()
     return resp.text
 
+def remap_old_tid(tid: str) -> str:
+    mapping = {"T1086": "T1059.001", "T1155": "T1059.002", "T1150": "T1547.011", "T1162": "T1547.011"}
+    if tid in mapping:
+        return mapping[tid]
+    return tid
+
 def filter_goal_ttps(ttps: list[Any]) -> list[Any]:
     goals = []
     for ttp in ttps:

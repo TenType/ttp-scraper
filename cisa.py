@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from rich.console import Console
 
-from utils import fetch, filter_goal_ttps, MitreAttack, TTP_REGEX
+from utils import fetch, filter_goal_ttps, remap_old_tid, MitreAttack, TTP_REGEX
 
 BASE = "https://www.cisa.gov"
 INDEX = "https://www.cisa.gov/news-events/cybersecurity-advisories?f[0]=advisory_type%3A94"
@@ -132,6 +132,7 @@ def extract_advisory_fields(html: str, mitre_attack: MitreAttack) -> dict:
         for m in re.finditer(TTP_REGEX, text_blob):
             tid = m.group(1)
             if not any(t.get("id") == tid for t in ttps):
+                tid = remap_old_tid(tid)
                 ttps.append(mitre_attack.get_mitre_info(tid))
         return ttps
 
