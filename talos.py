@@ -47,10 +47,33 @@ class TalosReport:
                 return default
         return d
     
-    def add_https_to_url(self, url: str) -> str:
-        if not url.startswith("https://"):
-            return f"https://{url}"
-        return url
+    def format_url(self, url: str) -> str:
+        if not isinstance(url, str) or url.strip() == "":
+            return url
+
+        # Match optional scheme, host, and path
+        m = re.match(r'^(?:https?://)?(?P<host>blog\.talosintelligence\.com)(?P<path>/.*)?$', url)
+        if not m:
+            # If it doesn't look like the Talos blog host, just ensure https and return
+            if url.startswith("http://"):
+                return "https://" + url.split("http://", 1)[1]
+            if not url.startswith("https://"):
+                return f"https://{url}"
+            return url
+
+        host = m.group("host")
+        path = m.group("path") or ""
+
+        # Remove leading date segment /YYYY/MM/ if present
+        date_seg = re.match(r"^/(\d{4})/(\d{2})(?P<rest>/.*)?$", path)
+        if date_seg:
+            rest = date_seg.group("rest") or ""
+            normalized_path = rest
+        else:
+            normalized_path = path
+
+        # Ensure we return https://host + normalized_path
+        return f"https://{host}{normalized_path}"
 
     def find_title(self) -> str:
         # Has the format { "type": "bundle", ... }
@@ -92,10 +115,10 @@ class TalosReport:
         text = json.dumps(self.contents)
         matches = re.findall(TALOS_BLOG_REGEX, text)
         if len(matches) == 1:
-            return self.add_https_to_url(matches[0])
+            return self.format_url(matches[0])
         if len(matches) > 1:
             print(f"    :warning: More than one URL found, only capturing the first", style="yellow")
-            return self.add_https_to_url(matches[0])
+            return self.format_url(matches[0])
                     
         print(f"    :warning: No URL found", style="yellow")
         return ""
