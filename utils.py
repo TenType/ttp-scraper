@@ -23,6 +23,18 @@ def fetch(url: str, timeout: int = 30) -> str:
     resp.raise_for_status()
     return resp.text
 
+def filter_goal_ttps(ttps: list[Any]) -> list[Any]:
+    goals = []
+    for ttp in ttps:
+        tactics = ttp["tactics"]
+        if "impact" in tactics or "exfiltration" in tactics:
+            goals.append(ttp)
+
+    for g in goals:
+        ttps.remove(g)
+
+    return goals
+
 class MitreAttack:
     def __init__(self):
         self.data = self.prepare_mitre_attack_data()

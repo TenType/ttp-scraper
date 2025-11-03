@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Iterator
 from rich.console import Console
 
-from utils import MitreAttack, TTP_REGEX
+from utils import filter_goal_ttps, MitreAttack, TTP_REGEX
 
 BASE_URL = "https://raw.githubusercontent.com/Cisco-Talos/IOCs/refs/heads/main"
 TALOS_BLOG_REGEX = r"""(?:https?://)?blog\.talosintelligence\.com(?:/[^\s'"\)\]\}>,.;:]*)?"""
@@ -218,6 +218,7 @@ def main():
         print(f":mag: Analyzing {url}", style="bright_black")
         talos_report = TalosReport(url, contents, mitre_attack)
         ttps = talos_report.find_ttps()
+        goals = filter_goal_ttps(ttps)
         reports.append({
             "title": talos_report.find_title(),
             "source": "talos",
@@ -225,6 +226,7 @@ def main():
             "date": talos_report.find_date(),
             "summary": "",
             "mitigations": "",
+            "goals": goals,
             "ttps": ttps,
         })
         total_ttps += len(ttps)
