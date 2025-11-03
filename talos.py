@@ -4,8 +4,9 @@ import re
 from pathlib import Path
 from typing import Any, Iterator
 from rich.console import Console
+from bs4 import BeautifulSoup
 
-from utils import filter_goal_ttps, MitreAttack, TTP_REGEX
+from utils import fetch, filter_goal_ttps, MitreAttack, TTP_REGEX
 
 BASE_URL = "https://raw.githubusercontent.com/Cisco-Talos/IOCs/refs/heads/main"
 TALOS_BLOG_REGEX = r"""(?:https?://)?blog\.talosintelligence\.com(?:/[^\s'"\)\]\}>,.;:]*)?"""
@@ -229,6 +230,59 @@ class TalosReport:
         
         print(f"    :warning: No TTPs found", style="yellow")
         return []
+          
+    def scrape_summary(self, url: str) -> str:
+        try:
+            html = fetch(url)
+        except Exception as e:
+            if "404" in str(e):
+                print(f"    :warning: Summary not found: URL returned a 404 error", style="yellow")
+            else:
+                print(f"    :warning: Summary not found: {e}", style="red")
+            return ""
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Try to find the main article/container first
+        content = None
+        # Prefer <article>
+        content = soup.find("article")
+        if content is None:
+            # Look for common content container class names
+            content = soup.find(
+                "div",
+                class_=re.compile(r"(entry|post|article|content|post-body)", flags=re.I),
+            )
+        if content is None:
+            # Fallback to <main>
+            content = soup.find("main")
+
+        # 1) Look for a UL with multiple LIs near top of the content
+        if content:
+            ul = content.find("ul")
+            if ul:
+                lis = [li.get_text(strip=True) for li in ul.find_all("li") if li.get_text(strip=True)]
+                if len(lis) >= 1:
+                    return "\n".join(lis)
+
+        # 2) Search the whole page for the first UL with multiple LIs
+        for ul in soup.find_all("ul"):
+            lis = [li.get_text(strip=True) for li in ul.find_all("li") if li.get_text(strip=True)]
+            if len(lis) >= 1:
+                return "\n".join(lis)
+
+        # 3) Fallback to first few paragraph texts inside the content or page
+        paragraphs = []
+        if content:
+            paragraphs = [p.get_text(strip=True) for p in content.find_all("p") if p.get_text(strip=True)]
+        if not paragraphs:
+            paragraphs = [p.get_text(strip=True) for p in soup.find_all("p") if p.get_text(strip=True)]
+
+        if paragraphs:
+            # Return first up to 7 paragraphs joined by newline
+            return "\n".join(paragraphs[:7])
+
+        return ""
 
 
 def main():
@@ -242,12 +296,13 @@ def main():
         talos_report = TalosReport(url, contents, mitre_attack)
         ttps = talos_report.find_ttps()
         goals = filter_goal_ttps(ttps)
+        url = talos_report.find_url()
         reports.append({
             "title": talos_report.find_title(),
             "source": "talos",
-            "url": talos_report.find_url(),
+            "url": url,
             "date": talos_report.find_date(),
-            "summary": "",
+            "summary": "" if url == "" else talos_report.scrape_summary(url),
             "mitigations": "",
             "goals": goals,
             "ttps": ttps,
