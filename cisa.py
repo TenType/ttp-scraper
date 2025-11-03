@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from rich.console import Console
 
-from utils import fetch, MitreAttack, TTP_REGEX
+from utils import fetch, filter_goal_ttps, MitreAttack, TTP_REGEX
 
 BASE = "https://www.cisa.gov"
 INDEX = "https://www.cisa.gov/news-events/cybersecurity-advisories?f[0]=advisory_type%3A94"
@@ -142,9 +142,9 @@ def extract_advisory_fields(html: str, mitre_attack: MitreAttack) -> dict:
     summary = get_summary(soup)
     mitigations = get_mitigations(soup)
     ttps = get_ttps(soup, mitre_attack)
+    goals = filter_goal_ttps(ttps)
 
-    return {"title": "(no title)", "source": "cisa", "url": "(no url)", "date": "(no date)", "summary": summary, "mitigations": mitigations, "ttps": ttps}
-
+    return {"title": "(no title)", "source": "cisa", "url": "(no url)", "date": "(no date)", "summary": summary, "mitigations": mitigations, "goals": goals, "ttps": ttps}
 
 def get_index_items(url: str):
     html = fetch(url)
@@ -156,9 +156,6 @@ def get_index_items(url: str):
         if not href or not title:
             continue
         yield urljoin(BASE, str(href))
-
-
-
 
 def scrape(max_pages = 17, cutoff = date(2017, 1, 1)) -> tuple[list[dict], int]:
     mitre_attack = MitreAttack()
