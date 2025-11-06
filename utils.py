@@ -18,16 +18,20 @@ MITRE_ICS_ATTACK = "https://raw.githubusercontent.com/mitre/cti/master/ics-attac
 
 TTP_REGEX = r"\b(T\d{4}(?:\.\d{1,3})?)\b"
 
+TID_REMAP = {
+    "T1086": "T1059.001",
+    "T1155": "T1059.002",
+    "T1150": "T1547.011",
+    "T1162": "T1547.011",
+}
+
 def fetch(url: str, timeout: int = 30) -> str:
     resp = requests.get(url, timeout=timeout)
     resp.raise_for_status()
     return resp.text
 
 def remap_old_tid(tid: str) -> str:
-    mapping = {"T1086": "T1059.001", "T1155": "T1059.002", "T1150": "T1547.011", "T1162": "T1547.011"}
-    if tid in mapping:
-        return mapping[tid]
-    return tid
+    return TID_REMAP.get(tid, tid)
 
 def filter_goal_ttps(ttps: list[Any]) -> list[Any]:
     goals = []
