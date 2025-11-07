@@ -70,8 +70,11 @@ class MitreAttack:
     def get_mitre_info(self, tid: str) -> dict[str, Any]:
         technique = self.data.get_object_by_attack_id(tid, "attack-pattern")
         if technique:
-            tactics = [t.phase_name for t in technique.kill_chain_phases] # type: ignore
-            return {"name": technique.name, "id": tid, "tactics": tactics}
+            if hasattr(technique, "kill_chain_phases"):
+                tactics = [t.phase_name for t in technique.kill_chain_phases] # type: ignore
+                return {"name": technique.name, "id": tid, "tactics": tactics}
+            print(f"    :warning: No tactics found in MITRE attack data: {tid}", style="yellow")
+            return {"name": technique.name, "id": tid, "tactics": []}
 
         name = self.scrape_mitre_name(tid)
         if name:
