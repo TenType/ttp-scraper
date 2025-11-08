@@ -10,4 +10,6 @@ dependencies = [
     "rich",
     "mitreattack-python",
     "stix2",
+    "python-dotenv",
+    "OTXv2",
 ]
