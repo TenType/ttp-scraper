@@ -7,6 +7,11 @@ def validate_ttp_chains(json_file: str = "ttp-chain-output.json"):
     # Load the TTP chain data
     with open(json_file, "r") as f:
         chains = json.load(f)
+        # If a single chain object is provided (not a list), treat it as a singleton list
+        if isinstance(chains, dict):
+            chains = [chains]
+        elif not isinstance(chains, list):
+            raise ValueError(f"Unexpected TTP chain format: {type(chains)}")
     
     # Initialize MITRE ATT&CK data
     mitre = MitreAttack()
